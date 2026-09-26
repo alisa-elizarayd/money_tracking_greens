@@ -5,7 +5,7 @@
    - Статика (иконки, manifest): cache-first
    ============================================================ */
 
-const CACHE_VERSION = 'tutor-tracker-v1';
+const CACHE_VERSION = 'tutor-tracker-v2';
 const CACHE_STATIC  = `${CACHE_VERSION}-static`;
 const CACHE_DYNAMIC = `${CACHE_VERSION}-dynamic`;
 
