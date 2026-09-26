@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7B509F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Трекер оплат">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <title>Трекер оплат репетитора</title>
 <style>
   :root{
@@ -868,6 +876,18 @@ renderDays();
 render();
 updateClock();
 setInterval(()=>{ updateClock(); render(); }, 30000);
+
+
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .then(reg => console.log('[PWA] SW зарегистрирован:', reg.scope))
+        .catch(err => console.warn('[PWA] SW ошибка:', err));
+    });
+  }
 </script>
 </body>
 </html>
