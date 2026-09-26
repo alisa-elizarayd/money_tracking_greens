@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Трекер оплат репетитора</title>
+<style>
+  :root{
+    --green:#509F54;
+    --purple:#7B509F;
+    --berry:#9F5074;
+    --bg:#f6f4f8;
+    --card:#ffffff;
+    --text:#2b2430;
+    --muted:#7a7284;
+    --line:#e7e2ec;
+    --shadow:0 4px 14px rgba(80,40,110,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: Monaco, "Lucida Console", "Courier New", monospace;
+    background:var(--bg);
+    color:var(--text);
+    font-size:13px;
+  }
+  header{padding:22px 30px 10px;}
+  h1{margin:0 0 14px;font-size:22px;letter-spacing:.5px;color:var(--purple);}
+  .mission{
+    background:linear-gradient(90deg,var(--green),var(--purple));
+    color:#fff;border-radius:12px;padding:14px 20px;
+    display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+    box-shadow:var(--shadow);line-height:1.5;
+  }
+  .mission strong{font-size:13px;}
+  .mission span{opacity:.92;font-size:12px;}
+
+  .layout{
+    display:grid;grid-template-columns: 1fr 300px;gap:20px;
+    padding:20px 30px 40px;align-items:start;
+  }
+  .panel{
+    background:var(--card);border-radius:14px;box-shadow:var(--shadow);
+    padding:18px;border:1px solid var(--line);
+  }
+  .panel h2{
+    margin:0 0 14px;font-size:15px;color:var(--green);
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .clock{
+    font-size:11px;color:var(--muted);font-weight:normal;
+    background:#faf8fd;padding:3px 9px;border-radius:20px;border:1px solid var(--line);
+  }
+
+  .student-form{
+    display:grid;grid-template-columns: 1.4fr .9fr 1fr auto;
+    gap:8px;margin-bottom:16px;
+  }
+  input, select, textarea, button{font-family:inherit;font-size:12px;}
+  input, select, textarea{
+    padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    background:#fbfafc;color:var(--text);outline:none;width:100%;
+  }
+  input:focus, select:focus, textarea:focus{border-color:var(--purple);}
+
+  /* === ДНИ ЗАНЯТИЙ: сетка из 7 равных колонок === */
+  .days{
+    grid-column:1/-1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .days-label{
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:.3px;
+  }
+  .days-grid{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:5px;
+    width:100%;
+  }
+  .day-toggle{
+    padding:8px 0;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fbfafc;
+    cursor:pointer;
+    user-select:none;
+    color:var(--muted);
+    transition:.15s;
+    text-align:center;
+    font-size:12px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+  }
+  .day-toggle.on{background:var(--purple);color:#fff;border-color:var(--purple);}
+  .day-toggle:active{transform:scale(.96);}
+
+  .btn{
+    padding:9px 14px;border:none;border-radius:8px;cursor:pointer;
+    color:#fff;background:var(--green);transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn.purple{background:var(--purple);}
+  .btn.berry{background:var(--berry);}
+  .btn.ghost{background:transparent;color:var(--purple);border:1px solid var(--purple);}
+  .btn.tiny{padding:4px 8px;font-size:11px;border-radius:6px;}
+
+  .student-card{
+    border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-bottom:12px;background:#fdfcff;
+    transition:padding .15s;
+  }
+  .student-card.collapsed{padding:10px 14px;}
+  .student-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    gap:10px;flex-wrap:wrap;
+  }
+  .student-title{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;}
+  .chevron{
+    color:var(--purple);font-size:11px;transition:transform .15s;
+    display:inline-block;width:12px;text-align:center;
+  }
+  .student-card.collapsed .chevron{transform:rotate(-90deg);}
+  .student-name{font-size:14px;font-weight:bold;color:var(--purple);}
+  .collapse-summary{
+    display:none;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;
+  }
+  .student-card.collapsed .collapse-summary{display:block;}
+  .student-card.collapsed .student-body{display:none;}
+  .student-meta{color:var(--muted);font-size:11px;margin-top:4px;line-height:1.6;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;margin-right:4px;}
+  .badge.green{background:rgba(80,159,84,.15);color:var(--green);}
+  .badge.purple{background:rgba(123,80,159,.15);color:var(--purple);}
+  .badge.berry{background:rgba(159,80,116,.15);color:var(--berry);}
+  .badge.gray{background:#eee;color:#888;}
+  .badge.orange{background:rgba(230,126,34,.15);color:#e67e22;}
+
+  .sub{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;}
+  .sub-title{font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+
+  .pay-row{display:grid;grid-template-columns: 1fr 1fr 1fr auto;gap:8px;margin-bottom:10px;align-items:end;}
+  .pay-row label{font-size:10px;color:var(--muted);display:block;margin-bottom:3px;}
+
+  .lessons{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;}
+
+  .divider-beyond{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 10px;
+    background:linear-gradient(90deg,rgba(230,126,34,.14),rgba(230,126,34,.02));
+    border-top:2px dashed #e67e22;
+    border-bottom:1px solid rgba(230,126,34,.2);
+    font-size:10px;color:#e67e22;letter-spacing:.5px;text-transform:uppercase;
+  }
+  .divider-beyond::before{content:'⚠';font-size:12px;}
+
+  .lesson-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:7px 10px;border-bottom:1px solid #f0ecf4;gap:8px;flex-wrap:wrap;
+  }
+  .lesson-row:last-child{border-bottom:none;}
+  .lesson-row.today{
+    background:linear-gradient(90deg,rgba(80,159,84,.14),rgba(123,80,159,.06));
+    border-left:3px solid var(--green);
+  }
+  .lesson-row.past{opacity:.82;}
+  .lesson-row.beyond{
+    background:#fff7ef;
+    border-left:3px solid #e67e22;
+  }
+  .lesson-row.beyond.today{
+    background:linear-gradient(90deg,rgba(230,126,34,.18),rgba(80,159,84,.06));
+  }
+  .lesson-date{font-size:12px;min-width:130px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .today-tag{font-size:9px;background:var(--green);color:#fff;padding:1px 6px;border-radius:20px;letter-spacing:.3px;}
+  .lesson-actions{display:flex;gap:5px;flex-wrap:wrap;}
+  .status-pill{font-size:10px;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .st-planned{background:#eee;color:#777;}
+  .st-done{background:rgba(80,159,84,.15);color:var(--green);}
+  .st-paid-move{background:rgba(123,80,159,.15);color:var(--purple);}
+  .st-free-move{background:rgba(159,80,116,.15);color:var(--berry);}
+  .st-cancel{background:#fdecec;color:#c0392b;}
+  .st-future{background:#eef4ff;color:#3b6ea5;}
+  .st-unpaid{background:#fff0e0;color:#e67e22;}
+  .st-beyond{background:rgba(230,126,34,.18);color:#e67e22;}
+
+  .notes-panel{position:sticky;top:20px;}
+  .note{
+    border-radius:10px;padding:11px 12px;margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);position:relative;line-height:1.5;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .note .note-actions{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap;}
+  .note textarea{
+    background:rgba(255,255,255,.6);border:1px dashed rgba(0,0,0,.2);
+    min-height:70px;resize:vertical;transition:font-weight .1s,font-style .1s;
+  }
+  .note .note-text{white-space:pre-wrap;}
+  .sticker-tools{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
+  .fmt{
+    width:30px;height:30px;border-radius:7px;border:1px solid rgba(0,0,0,.15);
+    background:#fff;cursor:pointer;font-size:12px;
+  }
+  .fmt.active{outline:2px solid var(--purple);}
+  .add-note{margin-bottom:12px;}
+
+  .report{margin-top:14px;background:#faf8fd;border:1px solid var(--line);border-radius:10px;padding:12px;}
+  .report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:8px;}
+  .rep-item{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center;}
+  .rep-num{font-size:16px;font-weight:bold;color:var(--purple);}
+  .rep-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
+
+  .empty{color:var(--muted);font-size:12px;padding:10px 0;}
+  ::-webkit-scrollbar{width:7px;height:7px;}
+  ::-webkit-scrollbar-thumb{background:#d8d0e0;border-radius:6px;}
+
+  @media(max-width:820px){
+    .layout{grid-template-columns:1fr;}
+    .student-form{grid-template-columns:1fr 1fr;}
+    .pay-row{grid-template-columns:1fr 1fr;}
+    .notes-panel{position:static;}
+  }
+
+  /* === МОБИЛЬНАЯ АДАПТАЦИЯ === */
+  @media(max-width:520px){
+    header{padding:16px 14px 8px;}
+    h1{font-size:18px;}
+    .mission{padding:12px 14px;font-size:11px;gap:10px;}
+    .mission span{font-size:11px;}
+    .layout{padding:14px;gap:14px;}
+    .panel{padding:14px;}
+
+    .student-form{
+      grid-template-columns:1fr 1fr;
+      gap:7px;
+    }
+    .student-form > input#sName{grid-column:1/-1;}
+    .student-form > input#sRate{grid-column:1/-1;}
+
+    /* Кнопка "+ Ученик" и пустой div схлопываем */
+    .student-form > div:empty{display:none;}
+    .student-form > button{
+      grid-column:1/-1;
+      width:100%;
+      padding:11px;
+      font-size:13px;
+    }
+
+    /* Сетка дней — на всю ширину, компактнее */
+    .days-grid{gap:4px;}
+    .day-toggle{
+      font-size:11px;
+      padding:7px 0;
+      min-height:32px;
+      border-radius:7px;
+    }
+
+    /* Карточка ученика */
+    .student-name{font-size:13px;}
+    .student-meta{font-size:10.5px;}
+    .badge{font-size:10px;padding:2px 6px;}
+    .chevron{font-size:10px;}
+
+    /* Внесение абонемента — в столбик */
+    .pay-row{
+      grid-template-columns:1fr 1fr;
+      gap:7px;
+    }
+    .pay-row > button{grid-column:1/-1;width:100%;padding:10px;font-size:12px;}
+    .pay-row > div:nth-child(3){grid-column:1/-1;}
+
+    /* Уроки */
+    .lesson-row{padding:9px 10px;gap:6px;}
+    .lesson-date{font-size:11.5px;min-width:0;width:100%;}
+    .lesson-actions{width:100%;}
+    .lesson-actions select{width:100% !important;padding:7px 8px;}
+    .status-pill{font-size:9.5px;}
+
+    /* Отчёт — 2 колонки */
+    .report{padding:10px;}
+    .report-grid{grid-template-columns:repeat(2,1fr);gap:6px;}
+    .rep-num{font-size:15px;}
+
+    /* Заметки */
+    .note{padding:10px;}
+    .fmt{width:28px;height:28px;}
+
+    /* Заголовок с часами — переносим часы на новую строку */
+    .panel h2{flex-direction:column;align-items:flex-start;gap:6px;}
+    .clock{align-self:flex-start;}
+  }
+
+  @media(max-width:360px){
+    .day-toggle{font-size:10px;min-height:30px;padding:6px 0;}
+    .days-grid{gap:3px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Трекер оплат репетитора</h1>
+  <div class="mission">
+    <strong>@elizarayd entwickelt – моя миссия:</strong>
+    <span>Помочь репетиторам вести финансы и учёт уроков без хаоса</span>
+    <span>➕ Создайте карточку ученика → 💳 Внесите абонемент: укажите дату начала и кол-во уроков → 📅 Построится ровно столько уроков, сколько оплачено → 📊 Смотрите отчёт и 🗒️ ведите заметки.</span>
+  </div>
+</header>
+
+<div class="layout">
+  <section class="panel">
+    <h2>
+      <span>📋 Учёт оплаты</span>
+      <span class="clock" id="clock">—</span>
+    </h2>
+
+    <div class="student-form">
+      <input id="sName" placeholder="Имя ученика">
+      <input id="sRate" type="number" min="0" placeholder="Ставка ₽/урок">
+      <div></div>
+      <button class="btn" onclick="addStudent()">+ Ученик</button>
+      <div class="days">
+        <div class="days-label">Дни занятий:</div>
+        <div class="days-grid" id="daysGrid"></div>
+      </div>
+    </div>
+
+    <div id="students"></div>
+    <div class="empty" id="emptyMsg">Пока нет учеников. Добавьте первого 👆</div>
+  </section>
+
+  <aside class="panel notes-panel">
+    <h2>🗒️ Заметки</h2>
+    <button class="btn purple add-note" style="width:100%" onclick="addNote()">+ Создать заметку</button>
+    <div id="notes"></div>
+  </aside>
+</div>
+
+<script>
+/* ================== КОНСТАНТЫ ================== */
+const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+
+let state = {
+  students: [],
+  notes: [],
+  selectedDays: [],
+  collapsed: {}
+};
+let editingNoteId = null;
+let activeFormat = {bold:false, italic:false, underline:false, color:'#2b2430'};
+
+/* ================== ЗАГРУЗКА ================== */
+function load(){
+  try{
+    const s = localStorage.getItem('tutor_mvp_state_v5');
+    if(s){
+      const parsed = JSON.parse(s);
+      state = Object.assign(state, parsed);
+      if(!state.collapsed) state.collapsed = {};
+    }
+  }catch(e){}
+}
+function save(){ localStorage.setItem('tutor_mvp_state_v5', JSON.stringify(state)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ================== ДАТЫ ================== */
+function pad(n){ return String(n).padStart(2,'0'); }
+function toISO(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayISO(){ return toISO(new Date()); }
+function nowTime(){
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function fmtDate(iso){
+  const [y,m,d] = iso.split('-');
+  const dt = new Date(iso+'T00:00:00');
+  return `${d} ${MONTHS[+m-1]} (${DAYS[(dt.getDay()+6)%7]})`;
+}
+function updateClock(){
+  const el = document.getElementById('clock');
+  if(!el) return;
+  const d = new Date();
+  el.textContent = `${pad(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()} • ${nowTime()}`;
+}
+
+/* ================== ДНИ (сетка 7 в ряд) ================== */
+function renderDays(){
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+  DAYS.forEach(d=>{
+    const el = document.createElement('span');
+    el.className = 'day-toggle' + (state.selectedDays.includes(d)?' on':'');
+    el.textContent = d;
+    el.onclick = ()=>{
+      if(state.selectedDays.includes(d)) state.selectedDays = state.selectedDays.filter(x=>x!==d);
+      else state.selectedDays.push(d);
+      renderDays();
+    };
+    grid.appendChild(el);
+  });
+}
+
+/* ================== УЧЕНИКИ ================== */
+function addStudent(){
+  const name = document.getElementById('sName').value.trim();
+  const rate = parseFloat(document.getElementById('sRate').value) || 0;
+  if(!name){ alert('Введите имя ученика'); return; }
+  if(state.selectedDays.length === 0){ alert('Выберите хотя бы один день занятий'); return; }
+  state.students.push({
+    id: uid(),
+    name, rate,
+    days: [...state.selectedDays],
+    payments: [],
+    lessons: [],
+    balance: 0,
+    scheduleStart: null
+  });
+  document.getElementById('sName').value='';
+  document.getElementById('sRate').value='';
+  state.selectedDays = [];
+  renderDays();
+  save(); render();
+}
+
+function deleteStudent(id){
+  if(!confirm('Удалить ученика и всю его историю?')) return;
+  state.students = state.students.filter(s=>s.id!==id);
+  delete state.collapsed[id];
+  save(); render();
+}
+
+function toggleCard(id){
+  state.collapsed[id] = !state.collapsed[id];
+  save(); render();
+}
+
+/* ================== АБОНЕМЕНТ ================== */
+function addPayment(id){
+  const s = state.students.find(x=>x.id===id);
+  const lessonsInput = document.getElementById('payLessons_'+id);
+  const startInput = document.getElementById('payStart_'+id);
+  const lessons = parseInt(lessonsInput.value);
+  const startDate = startInput.value;
+
+  if(!lessons || lessons<=0){ alert('Укажите количество уроков в абонементе'); return; }
+  if(!startDate){ alert('Укажите дату начала абонемента'); return; }
+
+  const amount = s.rate * lessons;
+  s.payments.push({ id:uid(), date: todayISO(), lessons, amount, startDate });
+
+  if(!s.scheduleStart || startDate < s.scheduleStart){
+    s.scheduleStart = startDate;
+  }
+
+  s.balance += lessons;
+  buildLessonsForPayment(s, startDate, lessons);
+  recalcLessons(s);
+
+  lessonsInput.value = '';
+  save(); render();
+}
+
+/* ================== ПОСТРОЕНИЕ РОВНО N УРОКОВ ================== */
+function buildLessonsForPayment(student, startDate, count){
+  const existing = new Set(student.lessons.map(l=>l.date));
+  const cursor = new Date(startDate+'T00:00:00');
+  let added = 0;
+  let guard = 0;
+  const MAX_ITER = 366 * 2;
+
+  while(added < count && guard < MAX_ITER){
+    guard++;
+    const wd = DAYS[(cursor.getDay()+6)%7];
+    if(student.days.includes(wd)){
+      const iso = toISO(cursor);
+      if(!existing.has(iso)){
+        student.lessons.push({ id:uid(), date:iso, status:'planned', movedFrom:null });
+        existing.add(iso);
+        added++;
+      }
+    }
+    cursor.setDate(cursor.getDate()+1);
+  }
+
+  student.lessons.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+/* ================== ПЕРЕСЧЁТ СТАТУСОВ ================== */
+function recalcLessons(student){
+  const today = todayISO();
+  const totalPaid = student.payments.reduce((sum,p)=>sum+p.lessons, 0);
+
+  let used = 0;
+  student.lessons.forEach(l=>{
+    if(l.status === 'done' || l.status === 'paid-move') used++;
+  });
+
+  let remaining = Math.max(0, totalPaid - used);
+
+  student.lessons.forEach(l=>{
+    if(l.status === 'planned'){
+      const isPast = l.date < today;
+      if(isPast){
+        if(remaining > 0){ remaining--; l.status = 'done'; }
+        else l.status = 'unpaid';
+      } else {
+        if(remaining > 0){ remaining--; }
+        else l.status = 'beyond';
+      }
+    }
+  });
+
+  const doneCount = student.lessons.filter(l=>l.status==='done'||l.status==='paid-move').length;
+  student.balance = Math.max(0, totalPaid - doneCount);
+}
+
+/* ================== СМЕНА СТАТУСА ================== */
+function setLessonStatus(sid, lid, status){
+  const s = state.students.find(x=>x.id===sid);
+  const l = s.lessons.find(x=>x.id===lid);
+  if(!l) return;
+  l.status = status;
+
+  if(status === 'free-move' || status === 'paid-move'){
+    const nd = prompt('На какую дату переносим? (ГГГГ-ММ-ДД)', l.date);
+    if(nd){
+      l.movedTo = nd;
+      const exists = s.lessons.some(x=>x.date===nd && x.id!==l.id);
+      if(!exists){
+        s.lessons.push({id:uid(), date:nd, status:'planned', movedFrom:l.date});
+        s.lessons.sort((a,b)=>a.date.localeCompare(b.date));
+      }
+    }
+  } else {
+    l.movedTo = null;
+  }
+
+  recalcLessons(s);
+  save(); render();
+}
+
+/* ================== ОТЧЁТ ================== */
+function calcReport(s){
+  const done = s.lessons.filter(l=>l.status==='done').length;
+  const paidMove = s.lessons.filter(l=>l.status==='paid-move').length;
+  const freeMove = s.lessons.filter(l=>l.status==='free-move').length;
+  const cancel = s.lessons.filter(l=>l.status==='cancel').length;
+  const unpaid = s.lessons.filter(l=>l.status==='unpaid').length;
+  const planned = s.lessons.filter(l=>l.status==='planned').length;
+  const beyond = s.lessons.filter(l=>l.status==='beyond').length;
+  const income = s.payments.reduce((sum,p)=>sum+p.amount,0);
+  const paidLessons = s.payments.reduce((sum,p)=>sum+p.lessons,0);
+  return {
+    total:s.lessons.length, done, paidMove, freeMove,
+    cancel, unpaid, planned, beyond, income, paidLessons, balance:s.balance
+  };
+}
+
+/* ================== РЕНДЕР ================== */
+function render(){
+  state.students.forEach(s=>{ if(s.scheduleStart) recalcLessons(s); });
+
+  const box = document.getElementById('students');
+  box.innerHTML = '';
+  document.getElementById('emptyMsg').style.display = state.students.length ? 'none':'block';
+
+  state.students.forEach(s=>{
+    const rep = calcReport(s);
+    const isCollapsed = !!state.collapsed[s.id];
+    const card = document.createElement('div');
+    card.className = 'student-card' + (isCollapsed?' collapsed':'');
+
+    const today = todayISO();
+    const hasSchedule = !!s.scheduleStart;
+
+    let lessonsHTML = '';
+    if(!hasSchedule){
+      lessonsHTML = '<div class="empty">Внесите абонемент с датой начала — календарь построится автоматически</div>';
+    } else if(s.lessons.length === 0){
+      lessonsHTML = '<div class="empty">Нет уроков</div>';
+    } else {
+      let dividerInserted = false;
+      s.lessons.forEach(l=>{
+        if(!dividerInserted && l.status === 'beyond'){
+          lessonsHTML += `<div class="divider-beyond">сверх абонемента — не оплачено</div>`;
+          dividerInserted = true;
+        }
+        lessonsHTML += lessonHTML(s.id, l, today);
+      });
+    }
+
+    card.innerHTML = `
+      <div class="student-head">
+        <div style="flex:1;min-width:0">
+          <div class="student-title" onclick="toggleCard('${s.id}')">
+            <span class="chevron">▼</span>
+            <span class="student-name">${esc(s.name)}</span>
+          </div>
+          <div class="collapse-summary">
+            ${s.rate} ₽/урок • ${s.days.join(', ')} • баланс:
+            <span class="badge ${s.balance>0?'green':'gray'}">${s.balance}</span>
+            ${rep.beyond ? `• <span class="badge orange">сверх: ${rep.beyond}</span>` : ''}
+            ${hasSchedule ? `• с ${fmtDate(s.scheduleStart)}` : '• абонемент не внесён'}
+          </div>
+          <div class="student-meta">
+            Ставка: <b>${s.rate} ₽</b> / урок &nbsp;•&nbsp;
+            Дни: ${s.days.join(', ')}<br>
+            ${hasSchedule
+              ? `Отсчёт с: <b>${fmtDate(s.scheduleStart)}</b><br>`
+              : '<i style="color:var(--berry)">Абонемент не внесён — календарь пуст</i><br>'}
+            Баланс абонемента: <span class="badge ${s.balance>0?'green':'gray'}">${s.balance} урок(ов)</span>
+            Оплачено уроков: <span class="badge purple">${rep.paidLessons}</span>
+            ${rep.beyond ? `<span class="badge orange">сверх абонемента: ${rep.beyond}</span>` : ''}
+            Доход: <span class="badge berry">${rep.income} ₽</span>
+          </div>
+        </div>
+        <button class="btn berry tiny" onclick="event.stopPropagation();deleteStudent('${s.id}')">Удалить</button>
+      </div>
+
+      <div class="student-body">
+        <div class="sub">
+          <div class="sub-title">💳 Внести абонемент</div>
+          <div class="pay-row">
+            <div>
+              <label>Кол-во уроков</label>
+              <input id="payLessons_${s.id}" type="number" min="1" placeholder="напр. 8">
+            </div>
+            <div>
+              <label>Дата начала отсчёта</label>
+              <input id="payStart_${s.id}" type="date" value="${s.scheduleStart || today}">
+            </div>
+            <div>
+              <label>Итого</label>
+              <div style="font-size:12px;color:var(--muted);padding-top:9px" id="sum_${s.id}">—</div>
+            </div>
+            <button class="btn" onclick="addPayment('${s.id}')">Оплатить</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted)">
+            💡 Будет создано <b>ровно столько уроков, сколько вы оплатили</b>, начиная с указанной даты.
+          </div>
+        </div>
+
+        <div class="sub">
+          <div class="sub-title">📅 Уроки (${rep.total}) — сегодня ${fmtDate(today)}</div>
+          <div class="lessons">
+            ${lessonsHTML}
+          </div>
+        </div>
+
+        <div class="report">
+          <div class="sub-title">📊 Отчёт</div>
+          <div class="report-grid">
+            <div class="rep-item"><div class="rep-num">${rep.balance}</div><div class="rep-lbl">остаток уроков</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:var(--green)">${rep.done}</div><div class="rep-lbl">проведено</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:var(--purple)">${rep.paidMove}</div><div class="rep-lbl">платных переносов</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:var(--berry)">${rep.freeMove}</div><div class="rep-lbl">бесплатных переносов</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:#c0392b">${rep.cancel}</div><div class="rep-lbl">отмен</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:#e67e22">${rep.unpaid}</div><div class="rep-lbl">неоплачено</div></div>
+            <div class="rep-item"><div class="rep-num">${rep.planned}</div><div class="rep-lbl">запланировано</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:#e67e22">${rep.beyond}</div><div class="rep-lbl">сверх абонемента</div></div>
+            <div class="rep-item"><div class="rep-num" style="color:var(--purple)">${rep.income} ₽</div><div class="rep-lbl">доход</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+    box.appendChild(card);
+
+    const lessonsInput = document.getElementById('payLessons_'+s.id);
+    const sumEl = document.getElementById('sum_'+s.id);
+    if(lessonsInput && sumEl){
+      lessonsInput.addEventListener('input', ()=>{
+        const v = parseInt(lessonsInput.value) || 0;
+        sumEl.textContent = v>0 ? (v*s.rate)+' ₽' : '—';
+        sumEl.style.color = v>0 ? 'var(--purple)' : 'var(--muted)';
+        sumEl.style.fontWeight = v>0 ? 'bold' : 'normal';
+      });
+    }
+  });
+
+  renderNotes();
+}
+
+function lessonHTML(sid, l, today){
+  const map = {
+    planned:['st-future','запланирован (оплачен)'],
+    beyond:['st-beyond','сверх абонемента'],
+    done:['st-done','проведён ✔'],
+    'paid-move':['st-paid-move','платный перенос'],
+    'free-move':['st-free-move','бесплатный перенос'],
+    cancel:['st-cancel','отмена'],
+    unpaid:['st-unpaid','не оплачен']
+  };
+  const [cls,txt] = map[l.status] || ['st-planned','—'];
+  const moved = l.movedTo?` → ${fmtDate(l.movedTo)}`:'';
+  const isToday = l.date === today;
+  const isPast = l.date < today;
+  const isBeyond = l.status === 'beyond';
+  let rowCls = '';
+  if(isToday) rowCls += ' today';
+  if(isPast) rowCls += ' past';
+  if(isBeyond) rowCls += ' beyond';
+  const todayTag = isToday ? '<span class="today-tag">СЕГОДНЯ</span>' : '';
+
+  return `
+    <div class="lesson-row${rowCls}">
+      <div class="lesson-date">${fmtDate(l.date)} ${todayTag}</div>
+      <span class="status-pill ${cls}">${txt}${moved}</span>
+      <div class="lesson-actions">
+        <select onchange="setLessonStatus('${sid}','${l.id}',this.value)" style="width:auto">
+          ${opt('planned','Запланирован',l.status)}
+          ${opt('done','Проведён',l.status)}
+          ${opt('paid-move','Платный перенос',l.status)}
+          ${opt('free-move','Бесплатный перенос',l.status)}
+          ${opt('cancel','Отмена',l.status)}
+        </select>
+      </div>
+    </div>
+  `;
+}
+function opt(v,t,cur){ return `<option value="${v}" ${cur===v?'selected':''}>${t}</option>`; }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ================== ЗАМЕТКИ ================== */
+const NOTE_COLORS = ['#fef7c3','#d8f5d9','#e6dcf5','#f9dbe6','#d9eefb'];
+
+function addNote(){
+  const n = {
+    id: uid(), text: '',
+    color: NOTE_COLORS[Math.floor(Math.random()*NOTE_COLORS.length)],
+    bold:false, italic:false, underline:false, textColor:'#2b2430',
+    editing:true
+  };
+  state.notes.unshift(n);
+  editingNoteId = n.id;
+  activeFormat = {bold:false, italic:false, underline:false, color:'#2b2430'};
+  save(); renderNotes();
+  const ta = document.getElementById('noteText_'+n.id);
+  if(ta) ta.focus();
+}
+
+function deleteNote(id){
+  state.notes = state.notes.filter(n=>n.id!==id);
+  if(editingNoteId===id) editingNoteId = null;
+  save(); renderNotes();
+}
+
+function editNote(id){
+  editingNoteId = id;
+  const n = state.notes.find(x=>x.id===id);
+  if(n) activeFormat = {bold:n.bold, italic:n.italic, underline:n.underline, color:n.textColor||'#2b2430'};
+  renderNotes();
+  const ta = document.getElementById('noteText_'+id);
+  if(ta){ ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; }
+}
+
+function onNoteInput(id){
+  const n = state.notes.find(x=>x.id===id);
+  const ta = document.getElementById('noteText_'+id);
+  if(n && ta) n.text = ta.value;
+}
+
+function setFormat(key, val){
+  if(key==='color') activeFormat.color = val;
+  else activeFormat[key] = !activeFormat[key];
+
+  const id = editingNoteId;
+  if(id){
+    const n = state.notes.find(x=>x.id===id);
+    if(n){
+      n.bold = activeFormat.bold;
+      n.italic = activeFormat.italic;
+      n.underline = activeFormat.underline;
+      n.textColor = activeFormat.color;
+    }
+  }
+  const ta = document.getElementById('noteText_'+id);
+  if(ta){
+    ta.style.fontWeight = activeFormat.bold?'bold':'normal';
+    ta.style.fontStyle = activeFormat.italic?'italic':'normal';
+    ta.style.textDecoration = activeFormat.underline?'underline':'none';
+    ta.style.color = activeFormat.color;
+  }
+  const tools = document.querySelectorAll('.sticker-tools .fmt');
+  tools.forEach((btn,i)=>{
+    if(i===0) btn.classList.toggle('active', activeFormat.bold);
+    if(i===1) btn.classList.toggle('active', activeFormat.italic);
+    if(i===2) btn.classList.toggle('active', activeFormat.underline);
+  });
+  save();
+}
+
+function saveNote(id){
+  const n = state.notes.find(x=>x.id===id);
+  const ta = document.getElementById('noteText_'+id);
+  if(ta) n.text = ta.value;
+  n.bold = activeFormat.bold;
+  n.italic = activeFormat.italic;
+  n.underline = activeFormat.underline;
+  n.textColor = activeFormat.color;
+  n.editing = false;
+  editingNoteId = null;
+  save(); renderNotes();
+}
+
+function cancelNote(id){
+  const n = state.notes.find(x=>x.id===id);
+  if(!n) return;
+  if(!n.text.trim()) state.notes = state.notes.filter(x=>x.id!==id);
+  else n.editing = false;
+  editingNoteId = null;
+  save(); renderNotes();
+}
+
+function renderNotes(){
+  const box = document.getElementById('notes');
+  box.innerHTML = '';
+  if(state.notes.length===0){
+    box.innerHTML = '<div class="empty">Нет заметок. Создайте первую!</div>';
+    return;
+  }
+  state.notes.forEach(n=>{
+    const el = document.createElement('div');
+    el.className='note';
+    el.style.background = n.color;
+
+    if(n.editing){
+      const taStyle = `font-weight:${n.bold?'bold':'normal'};font-style:${n.italic?'italic':'normal'};text-decoration:${n.underline?'underline':'none'};color:${n.textColor||'#2b2430'};`;
+      el.innerHTML = `
+        <div class="sticker-tools">
+          <button class="fmt ${n.bold?'active':''}" style="font-weight:bold" onclick="setFormat('bold')">B</button>
+          <button class="fmt ${n.italic?'active':''}" style="font-style:italic" onclick="setFormat('italic')">I</button>
+          <button class="fmt ${n.underline?'active':''}" style="text-decoration:underline" onclick="setFormat('underline')">U</button>
+          <input type="color" class="fmt" value="${n.textColor||'#2b2430'}" onchange="setFormat('color',this.value)">
+        </div>
+        <textarea id="noteText_${n.id}" style="${taStyle}"
+          placeholder="Важная заметка..."
+          oninput="onNoteInput('${n.id}')">${esc(n.text)}</textarea>
+        <div class="note-actions">
+          <button class="btn tiny" onclick="saveNote('${n.id}')">💾 Сохранить</button>
+          <button class="btn ghost tiny" onclick="cancelNote('${n.id}')">Отмена</button>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="note-text" style="${styleOf(n)}">${esc(n.text) || '<i style="color:#999">пусто</i>'}</div>
+        <div class="note-actions">
+          <button class="btn purple tiny" onclick="editNote('${n.id}')">✏️ Редактировать</button>
+          <button class="btn berry tiny" onclick="deleteNote('${n.id}')">🗑 Удалить</button>
+        </div>
+      `;
+    }
+    box.appendChild(el);
+  });
+}
+function styleOf(n){
+  return `font-weight:${n.bold?'bold':'normal'};font-style:${n.italic?'italic':'normal'};text-decoration:${n.underline?'underline':'none'};color:${n.textColor||'#2b2430'};`;
+}
+
+/* ================== СТАРТ ================== */
+load();
+renderDays();
+render();
+updateClock();
+setInterval(()=>{ updateClock(); render(); }, 30000);
+</script>
+</body>
+</html>
