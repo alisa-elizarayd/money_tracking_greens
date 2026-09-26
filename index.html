@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">  
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7B509F">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,13 +25,19 @@
     --shadow:0 4px 14px rgba(80,40,110,.08);
   }
   *{box-sizing:border-box;}
-  body{
+    body{
     margin:0;
-    font-family: Monaco, "Lucida Console", "Courier New", monospace;
+    font-family: Monaco, Menlo, "Ubuntu Mono", "DejaVu Sans Mono", Consolas, "Liberation Mono", "Courier New", monospace;
     background:var(--bg);
     color:var(--text);
     font-size:13px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
+  
   header{padding:22px 30px 10px;}
   h1{margin:0 0 14px;font-size:22px;letter-spacing:.5px;color:var(--purple);}
   .mission{
