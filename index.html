@@ -37,9 +37,21 @@
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
-  header{padding:22px 30px 10px;}
-  h1{margin:0 0 14px;font-size:22px;letter-spacing:.5px;color:var(--purple);}
+    header{padding:22px 30px 10px;}
+  .header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .header-actions{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+  h1{margin:0;font-size:22px;letter-spacing:.5px;color:var(--purple);}
   .mission{
     background:linear-gradient(90deg,var(--green),var(--purple));
     color:#fff;border-radius:12px;padding:14px 20px;
@@ -244,6 +256,19 @@
   @media(max-width:520px){
     header{padding:16px 14px 8px;}
     h1{font-size:18px;}
+        .header-top{
+      align-items:flex-start;
+      margin-bottom:12px;
+    }
+    .header-actions{
+      width:100%;
+      justify-content:flex-start;
+    }
+    .header-actions .btn{
+      flex:1;
+      padding:8px 10px;
+      font-size:11px;
+    }
     .mission{padding:12px 14px;font-size:11px;gap:10px;}
     .mission span{font-size:11px;}
     .layout{padding:14px;gap:14px;}
@@ -318,7 +343,14 @@
 <body>
 
 <header>
-  <h1>Трекер оплат репетитора Greens</h1>
+  <div class="header-top">
+    <h1>Трекер оплат репетитора Greens</h1>
+    <div class="header-actions">
+      <button class="btn ghost tiny" onclick="exportData()">⬇ Export</button>
+      <button class="btn ghost tiny" onclick="importData()">⬆ Import</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="handleImportFile(event)">
+    </div>
+  </div>
   <div class="mission">
     <strong>@elizarayd entwickelt – моя миссия:</strong>
     <span>Помочь репетиторам вести финансы и учёт уроков без хаоса</span>
@@ -877,13 +909,92 @@ function styleOf(n){
 }
 
 /* ================== СТАРТ ================== */
+/* ================== ЭКСПОРТ / ИМПОРТ ================== */
+function exportData(){
+  const payload = {
+    app: 'tutor-tracker',
+    version: 5,
+    exportedAt: new Date().toISOString(),
+    students: state.students,
+    notes: state.notes
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const filename = `tutor-tracker-backup-${stamp}.json`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(){
+  document.getElementById('importFile').click();
+}
+
+function handleImportFile(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+
+      if(!data || typeof data !== 'object'){
+        alert('Файл повреждён или не является резервной копией.');
+        return;
+      }
+      if(!Array.isArray(data.students) || !Array.isArray(data.notes)){
+        alert('Это не файл резервной копии Трекера оплат.');
+        return;
+      }
+
+      const studentCount = data.students.length;
+      const notesCount = data.notes.length;
+
+      const ok = confirm(
+        `Импортировать резервную копию?\n\n` +
+        `Учеников: ${studentCount}\n` +
+        `Заметок: ${notesCount}\n\n` +
+        `⚠ Текущие данные будут ПОЛНОСТЬЮ заменены.`
+      );
+      if(!ok){ event.target.value = ''; return; }
+
+      state.students = data.students;
+      state.notes = data.notes;
+      state.collapsed = state.collapsed || {};
+      editingNoteId = null;
+
+      save();
+      render();
+      renderDays();
+
+      alert(`Готово! Загружено ${studentCount} ученик(ов) и ${notesCount} заметок.`);
+    }catch(err){
+      alert('Не удалось прочитать файл. Убедитесь, что это JSON-файл резервной копии.');
+      console.warn(err);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ================== СТАРТ ================== */
 load();
 renderDays();
 render();
 updateClock();
 setInterval(()=>{ updateClock(); render(); }, 30000);
 
-
+</script>
 </script>
 
 <script>
